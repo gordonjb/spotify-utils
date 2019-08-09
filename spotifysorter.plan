@@ -1,0 +1,10 @@
+load control file (original csv) into array (of objects?)
+
+load exported csv into array (of objects?)
+
+foreach line in control file
+    search exported csv for a match
+    when we find one, remove from exported array, and add to a new array of objects (i.e. the new order), this could just be spotify ids
+    if we don't find one, prompt to check the exported csv file and ask the user to enter the ID, can then be removed
+
+we should then have a list of spotify ids that we can make a call to the api to ❤
