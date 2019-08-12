@@ -16,7 +16,8 @@ def prompt_selection(results):
     print(results)
     response = input("Selection: ")
     if response == 's':
-        sid = input("Enter the Spotify ID: ")
+        sid = input("Enter the Spotify ID (must be in the exported list still): ")
+        prompt_selection(exported[exported['spotid'].str.strip().str.match(sid)])
         # Append new record
     elif response == 'x':
         print("Skipped")
