@@ -1,8 +1,14 @@
 import pandas
 import re
+import progressbar
+from tqdm import tqdm
+import numpy as np
+import csv
 
-
-def prompt_selection(results, ):
+def prompt_selection(results):
+    global ordered
+    global skipped
+    global exported
     print("More than one match. Type the number of the correct result, 's' to enter a Spotify ID manually, or 'x' to skip.")
     print("Control row was:")
     print(ctrl_row)
@@ -14,26 +20,33 @@ def prompt_selection(results, ):
         # Append new record
     elif response == 'x':
         print("Skipped")
+        skipped.append(ctrl_row)
     else:
-        ordered = ordered.append(result.loc[response], ignore_index = True)
+        ordered = ordered.append(results.loc[int(response)], ignore_index = True)
+        exported.loc[results.loc[int(response)].name, :] = np.nan
 
+
+def clean_up(input):
+    s1 = str(input).lower().replace('remastered', '').replace('remaster', '').replace('album version explicit', '').replace('radio edit', '').replace(' ', '')
+    return re.sub('\W+','', s1)
+
+
+def clean_up_df(input):
+    return input.str.lower().str.replace('remastered', '').str.replace('remaster', '').str.replace('album version explicit', '').str.replace('radio edit', '').str.replace(' ', '').str.replace('[^\w]','')
 
 control = pandas.read_csv('/mnt/c/Users/Gordon/Desktop/gpm/fullthumbs.csv')
 exported = pandas.read_csv('/mnt/c/Users/Gordon/Desktop/gpm/movedexport.csv', sep="|")
 
 ordered = pandas.DataFrame(columns=['artist', 'title', 'spotid'])
 skipped = []
-#print(control.head)
-#print(exported.head)
 
-for ctrl_row in control.itertuples():
+for ctrl_row in tqdm(control.itertuples()):
+
      # access data using column names
-    ctrl_artist = ctrl_row.artist
-    ctrl_title = ctrl_row.title
+    ctrl_artist = clean_up(ctrl_row.artist)
+    ctrl_title = clean_up(ctrl_row.title)
 
-    #exp_row = exported[ctrl_row.Index]
-    #result = exported.loc[(exported['artist'] == ctrl_artist) & (exported['title'] == ctrl_title)]
-    result = exported[exported['title'].str.contains(ctrl_title, flags=re.IGNORECASE, regex = False)]
+    result = exported[clean_up_df(exported['title']).str.contains(ctrl_title, regex = False, na=False)]
     count = result.title.count()
     #print(count)
     if count == 1:
@@ -41,34 +54,22 @@ for ctrl_row in control.itertuples():
         #print(result.iloc[0])
         exported.drop(result.iloc[0].name)
     elif count > 1:
-        result2 = result[result['artist'].str.contains(ctrl_artist, flags=re.IGNORECASE, regex = False)]
+        result2 = result[clean_up_df(result['artist']).str.contains(ctrl_artist, regex = False, na=False)]
         count2 = result2.title.count()
         if count2 == 1:
             ordered = ordered.append(result2, ignore_index = True)
             exported.drop(result2.iloc[0].name)
         elif count2 > 1:
-            #user entry
-            print("More than one match. Type the number of the correct result, 's' to enter a Spotify ID manually, or 'x' to skip.")
-            print("Control row was:")
-            print(ctrl_row)
-            print("Search results were:")
-            print(result2)
-            response = input("Selection: ")
+            prompt_selection(result2)
         elif count2 == 0:
-                #user entry
-                prompt_selection(results, ctrl_row, ordered, exported)
+                #user entry , ctrl_row, ordered, exported
+                prompt_selection(result)
     elif count == 0:
-        print("No match. Type the number of the correct result, 's' to enter a Spotify ID manually, or 'x' to skip.")
-        print("Control row was:")
-        print(ctrl_row)
-        response = input("Selection: ")
-        if response == 's':
-            sid = input("Enter the Spotify ID: ")
-        elif response == 'x':
-            print("Skipped")
-        else:
+        result3 = exported[clean_up_df(exported['artist']).str.contains(ctrl_artist, regex = False, na=False)]
+        prompt_selection(result3)
 
-print(ordered)
+ordered.to_csv('/mnt/c/Users/Gordon/Desktop/gpm/sorted.csv', sep="|", index=False)
+pandas.DataFrame(skipped).to_csv('/mnt/c/Users/Gordon/Desktop/gpm/skipped.csv', index=False, quoting=csv.QUOTE_ALL)
 #load control file (original csv) into array (of objects?)
 
 #load exported csv into array (of objects?)
