@@ -32,25 +32,26 @@ def prompt_selection(results):
 
 
 def clean_up(input):
-    s1 = str(input).lower().replace('remastered', '').replace('remaster', '').replace('album version explicit', '').replace('radio edit', '').replace(' ', '')
+    s1 = str(input).lower().replace('remastered', '').replace('remaster', '').replace('album version explicit', '').replace('2011', '').replace('radio edit', '').replace(' ', '')
     return re.sub('\W+','', s1)
 
 
 def clean_up_df(input):
-    return input.str.lower().str.replace('remastered', '').str.replace('remaster', '').str.replace('album version explicit', '').str.replace('radio edit', '').str.replace(' ', '').str.replace('[^\w]','')
+    return input.str.lower().str.replace('remastered', '').str.replace('remaster', '').str.replace('album version explicit', '').str.replace('2011', '').str.replace('radio edit', '').str.replace(' ', '').str.replace('[^\w]','')
 
 control = pandas.read_csv('/mnt/c/Users/Gordon/Desktop/gpm/fullthumbs.csv')
 exported = pandas.read_csv('/mnt/c/Users/Gordon/Desktop/gpm/movedexport.csv', sep="|")
 
 ordered = pandas.DataFrame(columns=['artist', 'title', 'spotid'])
 skipped = []
+dupes = []
 
 for ctrl_row in tqdm(control.itertuples()):
 
      # access data using column names
     ctrl_artist = clean_up(ctrl_row.artist)
     ctrl_title = clean_up(ctrl_row.title)
-    print(exported)
+
     result = exported[clean_up_df(exported['title']).str.contains(ctrl_title, regex = False, na=False)]
     count = result.title.count()
     #print(count)
@@ -62,11 +63,11 @@ for ctrl_row in tqdm(control.itertuples()):
         count2 = result2.title.count()
         if count2 == 1:
             ordered = ordered.append(result2, ignore_index = True)
-            exported.loc[result.iloc[0].name, :] = np.nan
+            exported.loc[result2.iloc[0].name, :] = np.nan
         elif count2 > 1:
             prompt_selection(result2)
         elif count2 == 0:
-                prompt_selection(result)
+            prompt_selection(result)
     elif count == 0:
         result3 = exported[clean_up_df(exported['artist']).str.contains(ctrl_artist, regex = False, na=False)]
         prompt_selection(result3)
