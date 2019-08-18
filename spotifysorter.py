@@ -26,6 +26,12 @@ def prompt_selection(results):
     elif response == 'd':
         print("Dupe")
         dupes.append(ctrl_row)
+    elif response == 'po':
+        print(ordered.to_string())
+        prompt_selection(results)
+    elif response == 'pe':
+        exported.to_csv('/mnt/c/Users/Gordon/Desktop/gpm/tmp_exported.csv', sep="|", index=False)
+        prompt_selection(results)
     else:
         ordered = ordered.append(results.loc[int(response)], ignore_index = True)
         exported.loc[results.loc[int(response)].name, :] = np.nan
